@@ -132,7 +132,6 @@ function changeUsername() {
   };
   socket.send(JSON.stringify(message));
 }
-//Com
 
 function sendMessage() {
   const messageText = document.getElementById("message").value;
