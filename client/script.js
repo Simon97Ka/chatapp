@@ -1,53 +1,37 @@
-if (location.host.includes("localhost")) {
-  // Load livereload script if we are on localhost
-  document.write(
-    '<script src="http://' +
-      (location.host || "localhost").split(":")[0] +
-      ':35729/livereload.js?snipver=1"></' +
-      "script>"
+
+// WebSocket-Verbindung herstellen
+const isLocalhost = location.host.includes("localhost");
+const websocketProtocol = isLocalhost ? "ws" : "wss";
+const websocketUrl = `${websocketProtocol}://${location.host}`;
+const socket = new WebSocket(websocketUrl);
+
+// Benutzer-ID generieren
+function generateUserId() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
   );
 }
+const userId = generateUserId();
 
-function guidGenerator() {
-  var S4 = function () {
-    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-  };
-  return (
-    S4() +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    S4() +
-    S4()
-  );
-}
-
-const backendUrl = window.location.origin.replace(/^http/, "ws").replace(/^https/, "wss")  
-const socket = new WebSocket(backendUrl);
-
-const userId = guidGenerator();
-
-async function getRandomUser() {
+// Zufälligen Benutzer abrufen
+async function fetchRandomUser() {
   const response = await fetch("https://randomuser.me/api/");
   const data = await response.json();
   return data.results[0];
 }
 
-socket.addEventListener("open", async (event) => {
+// WebSocket-Ereignisse
+socket.addEventListener("open", async () => {
   console.log("WebSocket connected!");
-  const user = await getRandomUser();
-  document.getElementById("username").value = user.name.first;
+  const user = await fetchRandomUser();
+  const usernameInput = document.getElementById("username");
+  usernameInput.value = user.name.first;
+
   const message = {
     type: "user",
     user: {
       id: userId,
-      name: document.getElementById("username").value,
+      name: usernameInput.value,
     },
   };
   socket.send(JSON.stringify(message));
@@ -68,6 +52,15 @@ socket.addEventListener("message", (event) => {
   }
 });
 
+socket.addEventListener("close", () => {
+  console.log("WebSocket closed.");
+});
+
+socket.addEventListener("error", (event) => {
+  console.error("WebSocket error:", event);
+});
+
+// Funktion zum Anzeigen von Benutzern
 function showUsers(users) {
   const usersElement = document.getElementById("users");
   usersElement.innerHTML = "";
@@ -78,48 +71,30 @@ function showUsers(users) {
   });
 }
 
+// Funktion zum Anzeigen von Nachrichten
 function showMessage(message) {
+  const messagesElement = document.getElementById("messages");
   const messageElement = document.createElement("div");
-  const innerMessageElement = document.createElement("div");
-  const headerElement = document.createElement("span");
-  const usernameElement = document.createElement("span");
-  const timeElement = document.createElement("span");
-  const messageTextElement = document.createElement("p");
-  innerMessageElement.classList.add(
-    "rounded-lg",
-    "p-4",
-    "inline-flex",
-    "flex-col",
-    "gap-2"
-  );
-  headerElement.classList.add("font-bold", "flex", "gap-2", "items-center");
+  messageElement.classList.add("message");
+
   if (message.user.id === userId) {
-    messageElement.classList.add("text-right", "self-end");
-    innerMessageElement.classList.add("bg-green-500", "border-2", "border-green-400");
-  } else {
-    innerMessageElement.classList.add("bg-slate-500", "border-2", "border-gray-400");
+    messageElement.classList.add("message-sent");
   }
-  usernameElement.innerHTML = message.user.name;
-  timeElement.innerHTML = "at " + message.time;
-  timeElement.classList.add("text-xs");
-  headerElement.appendChild(usernameElement);
-  headerElement.appendChild(timeElement);
-  messageTextElement.innerHTML = message.message;
-  innerMessageElement.appendChild(headerElement);
-  innerMessageElement.appendChild(messageTextElement);
-  messageElement.appendChild(innerMessageElement);
-  document.getElementById("messages").appendChild(messageElement);
-  messageElement.scrollIntoView();
+
+  const headerElement = document.createElement("div");
+  headerElement.classList.add("message-header");
+  headerElement.innerHTML = `<span class="username">${message.user.name}</span> at <span class="time">${message.time}</span>`;
+  const messageTextElement = document.createElement("p");
+  messageTextElement.classList.add("message-text");
+  messageTextElement.textContent = message.message;
+
+  messageElement.appendChild(headerElement);
+  messageElement.appendChild(messageTextElement);
+  messagesElement.appendChild(messageElement);
+  messagesElement.scrollTop = messagesElement.scrollHeight;
 }
 
-socket.addEventListener("close", (event) => {
-  console.log("WebSocket closed.");
-});
-
-socket.addEventListener("error", (event) => {
-  console.error("WebSocket error:", event);
-});
-
+// Benutzername ändern
 function changeUsername() {
   const newUsername = document.getElementById("username").value;
   if (newUsername === "") return;
@@ -127,12 +102,13 @@ function changeUsername() {
     type: "user",
     user: {
       id: userId,
-      name: document.getElementById("username").value,
+      name: newUsername,
     },
   };
   socket.send(JSON.stringify(message));
 }
 
+// Nachricht senden
 function sendMessage() {
   const messageText = document.getElementById("message").value;
   if (messageText === "") return;
@@ -150,3 +126,4 @@ function sendMessage() {
   socket.send(JSON.stringify(message));
   document.getElementById("message").value = "";
 }
+

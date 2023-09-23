@@ -1,5 +1,6 @@
 
-html {
+
+:root {
   --primary-color: rgb(255, 0, 0);
   --primary-color-light: rgb(200, 0, 0);
 }
@@ -33,3 +34,4 @@ body {
 #messages {
   background-image: url("./img/dog.jpg");
 }
+
