@@ -15,11 +15,11 @@ spec:
     spec:
       containers:
         - name: chat
-          image: switzerchees/pvs-chat:latest
+          image: simi97/chat-app
           resources:
             limits:
-              cpu: "0.5"
-              memory: "500Mi"
+              cpu: "0.2"
+              memory: "200Mi"
           env:
             - name: REDIS_HOST
               value: redis-service
