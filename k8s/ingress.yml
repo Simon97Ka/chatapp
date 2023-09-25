@@ -13,7 +13,7 @@ spec:
   tls:
     - hosts:
         - skaufmann.teko.hackerman.ch # Replace with your hostname in format *.teko.hackerman.ch Example: lastname.teko.hackerman.ch
-      secretName: skaufmann.teko.hackerman-tls # Replace with your hostname in format *.teko.hackerman.ch Example: lastname.teko.hackerman.ch
+      secretName: skaufmann.teko.hackerman.ch-tls # Replace with your hostname in format *.teko.hackerman.ch Example: lastname.teko.hackerman.ch
   rules:
     - host: skaufmann.teko.hackerman.ch # Replace with your hostname in format *.teko.hackerman.ch Example: lastname.teko.hackerman.ch
       http:
